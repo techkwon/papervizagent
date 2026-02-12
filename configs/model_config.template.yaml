@@ -1,0 +1,23 @@
+# Model and API Configuration for PaperVizAgent
+# Rename this file to specific config, e.g. "my_config.yaml" or leave as is.
+
+# Default Models
+defaults:
+  model_name: "" # e.g., "gemini-3-pro-preview"
+  image_model_name: "" # e.g., "gemini-3-pro-image-preview"
+
+# Google Cloud / Vertex AI settings
+google_cloud:
+  project_id: "" # Your Google Cloud Project ID
+  location: "global" # e.g. "us-central1" or "global"
+  
+# API Keys (alternatives to Application Default Credentials)
+api_keys:
+  google_api_key: ""
+  openai_api_key: ""
+  anthropic_api_key: ""
+  
+# Anthropic Vertex Settings (if you want to use Anthropic via Vertex)
+anthropic:
+  region: "us-central1"
+  project_id: "" # Leave empty to use google_cloud.project_id
