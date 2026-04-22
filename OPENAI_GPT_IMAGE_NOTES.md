@@ -37,6 +37,8 @@ API key is intentionally left blank in that file. Supply it via env:
    - `refine_image_with_nanoviz(...)` now supports both:
      - Gemini image models via `generate_content`
      - OpenAI GPT Image models via `images.edit`
+3. `utils/generation_utils.py`
+   - OpenAI-only local startup no longer crashes when Google ADC / Vertex credentials are absent.
 
 ## Important caution
 - The main diagram generation path already had `gpt-image` support in `agents/visualizer_agent.py`.
@@ -53,3 +55,8 @@ Then check:
 1. candidate generation with `gpt-image-2-2026-04-21`
 2. refine tab image editing with a simple uploaded image
 3. whether any Gemini-only assumptions remain in UI copy
+
+## Smoke-test result in this fork
+- `images.generate` with `gpt-image-2-2026-04-21`: success
+- `refine_image_with_nanoviz(...)` using OpenAI `images.edit`: success
+- Streamlit app boot on a local port with OpenAI env: success
