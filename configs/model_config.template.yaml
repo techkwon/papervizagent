@@ -16,9 +16,12 @@
 # Rename this file to specific config, e.g. "my_config.yaml" or leave as is.
 
 # Default Models
+# Example OpenAI setup:
+#   model_name: "gpt-4.1-mini"
+#   image_model_name: "gpt-image-2-2026-04-21"  # or "gpt-image-2"
 defaults:
-  model_name: "" # e.g., "gemini-3-pro-preview"
-  image_model_name: "" # e.g., "gemini-3-pro-image-preview"
+  model_name: "" # e.g., "gemini-3-pro-preview" or "gpt-4.1-mini"
+  image_model_name: "" # e.g., "gemini-3-pro-image-preview" or "gpt-image-2-2026-04-21"
 
 # Google Cloud / Vertex AI settings
 google_cloud:

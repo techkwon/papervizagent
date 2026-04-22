@@ -1,8 +1,14 @@
+# Local model config / secrets
 configs/model_config.yaml
+
+# Python cache / build artifacts
 __pycache__/
 *.pyc
-*.pyc
-__pycache__/
+
+# Local environments
 .venv/
+
+# Runtime data and generated outputs
 data/
 results/
+sample_outputs/

@@ -50,25 +50,36 @@ def get_config_val(section, key, env_var, default=""):
     return val or default
 
 # Initialize clients lazily or with robust defaults
+project_id = get_config_val("google_cloud", "project_id", "GOOGLE_CLOUD_PROJECT", "")
+location = get_config_val("google_cloud", "location", "GOOGLE_CLOUD_LOCATION", "global")
+
 try:
     import google.auth
+    from google.auth.exceptions import DefaultCredentialsError
     creds, _ = google.auth.default()
     if not hasattr(creds, "service_account_email"):
         print(f"DEBUG: Running with credentials: {type(creds)}")
-    project_id = get_config_val("google_cloud", "project_id", "GOOGLE_CLOUD_PROJECT", "")
-    location = get_config_val("google_cloud", "location", "GOOGLE_CLOUD_LOCATION", "global")
     print(f"DEBUG: Initialized Gemini Client with Project: {project_id}, Location: {location}")
-    
+
     # Try Vertex AI first (preferred for Cloud Run)
     gemini_client = genai.Client(vertexai=True, project=project_id, location=location)
-except ValueError:
-    # Fallback to API Key if Vertex fails (e.g. local dev without ADC)
+except ImportError as vertex_error:
+    # Fallback when Google auth libraries are unavailable in a local/OpenAI-only environment
     api_key = get_config_val("api_keys", "google_api_key", "GOOGLE_API_KEY", "")
     if api_key:
         gemini_client = genai.Client(api_key=api_key)
         print("Initialized Gemini Client with API Key")
     else:
-        print("Warning: Could not initialize Gemini Client. Missing credentials.")
+        print(f"Warning: Google auth libraries unavailable for Gemini initialization: {vertex_error}")
+        gemini_client = None
+except (DefaultCredentialsError, ValueError) as vertex_error:
+    # Fallback to API Key if Vertex/ADC init fails (e.g. local dev without ADC)
+    api_key = get_config_val("api_keys", "google_api_key", "GOOGLE_API_KEY", "")
+    if api_key:
+        gemini_client = genai.Client(api_key=api_key)
+        print("Initialized Gemini Client with API Key")
+    else:
+        print(f"Warning: Could not initialize Gemini Client. Falling back failed: {vertex_error}")
         gemini_client = None
 
 anthropic_project_id = get_config_val("anthropic", "project_id", "ANTHROPIC_PROJECT_ID", project_id)
@@ -122,6 +133,12 @@ async def call_gemini_with_retry_async(
     # Gemini API max candidate count is 8. We will call multiple times if needed.
     if config.candidate_count > 8:
         config.candidate_count = 8
+
+    if gemini_client is None:
+        print(
+            "Warning: Gemini client is not initialized. Provide GOOGLE_API_KEY or valid ADC/Vertex settings."
+        )
+        return ["Error"] * target_candidate_count
 
     current_contents = contents
     for attempt in range(max_attempts):
