@@ -158,28 +158,50 @@ async def process_parallel_candidates(data_list, exp_mode="dev_planner_critic", 
 
 async def refine_image_with_nanoviz(image_bytes, edit_prompt, aspect_ratio="21:9", image_size="2K"):
     """
-    Refine an image using an Image Editing API.
-    
-    Args:
-        image_bytes: Image data in bytes
-        edit_prompt: Text description of desired changes
-        aspect_ratio: Output aspect ratio (21:9, 16:9, 3:2)
-        image_size: Output resolution (2K or 4K)
-    
-    Returns:
-        Tuple of (edited_image_bytes, success_message)
+    Refine an image using the configured image model.
+
+    Supports:
+    - Gemini image models via generate_content
+    - OpenAI GPT Image models via images.edit
     """
     try:
+        image_model = get_config_val("defaults", "image_model_name", "IMAGE_MODEL_NAME", "")
+        if not image_model:
+            return None, "❌ IMAGE_MODEL_NAME is not configured"
+
+        # OpenAI GPT Image path
+        if image_model.startswith("gpt-image") or image_model.startswith("chatgpt-image"):
+            from utils.generation_utils import openai_client
+            if openai_client is None:
+                return None, "❌ OpenAI client is not initialized"
+
+            size_map = {
+                "2K": "1536x1024",
+                "4K": "1536x1024",  # keep same API size; users can upscale separately if needed
+            }
+            openai_size = size_map.get(image_size, "1536x1024")
+
+            response = await openai_client.images.edit(
+                model=image_model,
+                image=("input.png", image_bytes, "image/png"),
+                prompt=edit_prompt,
+                size=openai_size,
+                quality="high",
+                background="opaque",
+                output_format="png",
+            )
+            if response.data and response.data[0].b64_json:
+                return base64.b64decode(response.data[0].b64_json), "✅ Image refined successfully with OpenAI GPT Image!"
+            return None, "❌ OpenAI image edit returned no image data"
+
+        # Gemini path
         from google import genai
         from google.genai import types
-        
-        # Initialize client
+
         project_id = get_config_val("google_cloud", "project_id", "GOOGLE_CLOUD_PROJECT", "")
         location = get_config_val("google_cloud", "location", "GOOGLE_CLOUD_LOCATION", "global")
-        
         client = genai.Client(vertexai=True, project=project_id, location=location)
-        
-        # Prepare content
+
         contents = [
             types.Part.from_text(text=edit_prompt),
             types.Part.from_bytes(
@@ -187,8 +209,7 @@ async def refine_image_with_nanoviz(image_bytes, edit_prompt, aspect_ratio="21:9
                 data=image_bytes
             )
         ]
-        
-        # Configure generation
+
         config = types.GenerateContentConfig(
             temperature=1.0,
             max_output_tokens=8192,
@@ -198,29 +219,25 @@ async def refine_image_with_nanoviz(image_bytes, edit_prompt, aspect_ratio="21:9
                 image_size=image_size,
             ),
         )
-        
-        # Generate refined image
-        image_model = get_config_val("defaults", "image_model_name", "IMAGE_MODEL_NAME", "")
+
         response = await asyncio.to_thread(
             client.models.generate_content,
             model=image_model,
             contents=contents,
             config=config
         )
-        
-        # Extract image from response
+
         if response.candidates and response.candidates[0].content.parts:
             for part in response.candidates[0].content.parts:
                 if hasattr(part, 'inline_data') and part.inline_data:
                     edited_image_data = part.inline_data.data
-                    
                     if isinstance(edited_image_data, bytes):
                         return edited_image_data, "✅ Image refined successfully!"
                     elif isinstance(edited_image_data, str):
                         return base64.b64decode(edited_image_data), "✅ Image refined successfully!"
-        
+
         return None, "❌ No image data found in response"
-    
+
     except Exception as e:
         return None, f"❌ Error: {str(e)}"
 
