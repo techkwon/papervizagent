@@ -4,6 +4,9 @@
 논문 내용을 발표 가능한 도식으로 바꾸는 멀티에이전트 시각화 워크플로우
 <br><br>
 
+<img src="assets/figureflow_banner.png" alt="FigureFlow AI Banner" width="100%" />
+<br><br>
+
 <a href="https://arxiv.org/pdf/2601.23265"><img src="https://img.shields.io/badge/arXiv-2601.23265-b31b1b.svg" alt="arXiv"></a>
 <a href="https://dwzhu-pku.github.io/PaperBanana/"><img src="https://img.shields.io/badge/Project-Website-blue" alt="Project Website"></a>
 <a href="https://huggingface.co/papers/2601.23265"><img src="https://img.shields.io/badge/Paper-HuggingFace-yellow" alt="HuggingFace Paper"></a>
